@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{75E7508E-D1F0-4721-BC15-E0E0C7968284}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{80C21B96-9841-43B0-B597-552303097D54}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oyster.Domain", "src\Domain\Oyster.Domain\Oyster.Domain.csproj", "{FC74000E-51F3-4848-BDF8-D300F67A1CC8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infra", "Infra", "{F2B401E8-6A7D-47F3-9FBE-AC940B10DA75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oyster.Utils", "src\Infra\Oyster.Utils\Oyster.Utils.csproj", "{23E1535A-FA52-4F28-95A1-09B11009BF6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oyster.UI", "src\UI\Oyster.UI\Oyster.UI.csproj", "{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FC74000E-51F3-4848-BDF8-D300F67A1CC8} = {80C21B96-9841-43B0-B597-552303097D54}
+		{23E1535A-FA52-4F28-95A1-09B11009BF6F} = {F2B401E8-6A7D-47F3-9FBE-AC940B10DA75}
+		{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2} = {75E7508E-D1F0-4721-BC15-E0E0C7968284}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FC74000E-51F3-4848-BDF8-D300F67A1CC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC74000E-51F3-4848-BDF8-D300F67A1CC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC74000E-51F3-4848-BDF8-D300F67A1CC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC74000E-51F3-4848-BDF8-D300F67A1CC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23E1535A-FA52-4F28-95A1-09B11009BF6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23E1535A-FA52-4F28-95A1-09B11009BF6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23E1535A-FA52-4F28-95A1-09B11009BF6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23E1535A-FA52-4F28-95A1-09B11009BF6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58C1EACC-96D3-4E80-B7F0-67EC28E2A8A2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

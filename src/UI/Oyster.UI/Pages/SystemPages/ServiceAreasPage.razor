@@ -1,0 +1,70 @@
+@page "/ServiceAreas"
+@inject DataContext Db
+@inject NavigationManager Nav
+
+<MudText Typo="Typo.h4" GutterBottom="true">Service areas</MudText>
+
+<MudGrid Justify="Justify.FlexStart">
+    @foreach (var x in _serviceAreas)
+    {
+        var localI = x.Id;
+        <MudItem xs="4">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardMedia Image="/map_sample.png" Height="200" />
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">@x.AreaName</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="_ => GoToDetails(localI)">Details</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+
+    <MudItem xs="4">
+        <MudCard Elevation="0" Outlined="true">
+            <MudCardMedia Image="map_sample.png" Height="200" />
+            <MudCardContent>
+                <MudTextField @bind-Value="_newServiceArea.Name" Label="New area name" ></MudTextField>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddArea">Save area</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    private NewServiceArea _newServiceArea = new();
+    private List<ServiceArea> _serviceAreas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _serviceAreas = await Db.ServiceAreas.ToListAsync();
+        
+        await base.OnInitializedAsync();
+    }
+
+    private async Task AddArea()
+    {
+        await Db.ServiceAreas.AddAsync(new ServiceArea
+        {
+            AreaName = _newServiceArea.Name
+        });
+        await Db.SaveChangesAsync();
+        await OnInitializedAsync();
+        _newServiceArea = new NewServiceArea();
+    }
+
+    private void GoToDetails(int id)
+    {
+        Nav.NavigateTo($"/ServiceAreas/{id}/Bins");
+    }
+
+    private class NewServiceArea
+    {
+        public string Name { get; set; } = default!;
+    }
+
+}

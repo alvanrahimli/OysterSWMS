@@ -1,0 +1,97 @@
+@page "/ServiceAreas/{ServiceAreaId:int}/Bins"
+@inject DataContext Db
+@inject NavigationManager Nav
+
+<MudText Typo="Typo.h4" GutterBottom="true">Bins</MudText>
+
+<MudExpansionPanels MultiExpansion="true" Elevation="1">
+    <MudExpansionPanel Text="New data">
+        <MudGrid Justify="Justify.FlexStart">
+            <MudItem xs="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudTextField T="string" Label="Service area" Disabled="true" Value="@_serviceArea.AreaName"></MudTextField>
+                        <MudTextField @bind-Value="_newBinArea.AddressTitle" Label="Address title"></MudTextField>
+                        <MudStack Row="true">
+                            <MudNumericField T="decimal" @bind-Value="_newBinArea.Location[0]" Label="Latitude"></MudNumericField>
+                            <MudNumericField T="decimal" @bind-Value="_newBinArea.Location[1]" Label="Longitude"></MudNumericField>
+                        </MudStack>
+                        <MudNumericField T="int" @bind-Value="_newBinArea.WeightAddition" Label="+ Weight"></MudNumericField>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddBinArea">Add bin area</MudButton>
+                    </MudCardActions>
+                </MudCard>
+    
+            </MudItem>
+        </MudGrid>
+    </MudExpansionPanel>
+
+    <MudExpansionPanel Text="Bin areas" IsExpanded="true">
+        <MudTable Items="_binAreas">
+            <HeaderContent>
+                <MudTh>Address</MudTh>
+                <MudTh>Location (lat,long)</MudTh>
+                <MudTh>Additional weight</MudTh>
+                <MudTh>Service area name</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Address">@context.AddressTitle</MudTd>
+                <MudTd DataLabel="Location">@context.Location[0], @context.Location[1]</MudTd>
+                <MudTd DataLabel="WeightAddition">@context.WeightAddition</MudTd>
+                <MudTd DataLabel="ServiceArea">@_serviceArea.AreaName</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+@code {
+    
+    [Parameter]
+    public int ServiceAreaId { get; set; }
+
+    private NewBinArea _newBinArea = new();
+    private List<ServiceArea> _serviceAreas = new();
+    private ServiceArea _serviceArea = new();
+    private List<BinArea> _binAreas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var area = await Db.ServiceAreas.FirstOrDefaultAsync(x => x.Id == ServiceAreaId);
+        if (area is null)
+        {
+            Nav.NavigateTo("/ServiceAreas");
+            return;
+        }
+
+        _serviceArea = area;
+        _serviceAreas = await Db.ServiceAreas.ToListAsync();
+        _binAreas = await Db.BinAreas.Where(a => a.ServiceAreaId == ServiceAreaId).ToListAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task AddBinArea()
+    {
+        var binArea = new BinArea
+        {
+            AddressTitle = _newBinArea.AddressTitle,
+            Location = _newBinArea.Location,
+            WeightAddition = _newBinArea.WeightAddition,
+            ServiceAreaId = _serviceArea.Id
+        };
+
+        await Db.BinAreas.AddAsync(binArea);
+        await Db.SaveChangesAsync();
+        await OnInitializedAsync();
+
+        _newBinArea = new NewBinArea();
+    }
+
+    private class NewBinArea
+    {
+        public string AddressTitle { get; set; } = default!;
+        public decimal[] Location { get; set; } = { 0m, 0m };
+        public int WeightAddition { get; set; }
+        public int ServiceAreaId { get; set; }
+    }
+}
