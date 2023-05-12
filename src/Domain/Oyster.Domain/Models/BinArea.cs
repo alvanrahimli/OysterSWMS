@@ -8,4 +8,5 @@ public class BinArea : EntityBase
     public int ServiceAreaId { get; set; }
     public ServiceArea ServiceArea { get; set; } = default!;
 
+    public ICollection<TrashBin> TrashBins { get; set; } = new List<TrashBin>();
 }

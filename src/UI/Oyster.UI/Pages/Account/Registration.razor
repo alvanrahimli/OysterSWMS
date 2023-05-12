@@ -1,0 +1,65 @@
+﻿@page "/Account/Registration"
+@using Microsoft.Extensions.Caching.Memory
+@using Oyster.UI.Models
+@using Oyster.UI.Services
+@inject AuthService AuthService
+@inject IMemoryCache MemoryCache
+@inject NavigationManager NavManager
+
+<PageTitle>Registration | Specterise</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Register a new account</MudText>
+@if (UiMessage is not null)
+{
+    <MudAlert Severity="UiMessage.Severity">@UiMessage.Message</MudAlert>
+}
+<MudGrid>
+    <MudItem xs="12" sm="10" md="6" lg="4">
+        <MudCard>
+            <MudCardContent>
+                <MudTextField Label="Full name" HelperText="Min. 3 characters"
+                              @bind-Value="_model.FullName" For="@(() => _model.FullName)"/>
+                <MudTextField Label="Email" Class="mt-3"
+                              @bind-Value="_model.Email" For="@(() => _model.Email)"/>
+                <MudTextField Label="Password" HelperText="Choose a strong password" Class="mt-3"
+                              @bind-Value="_model.Password" For="@(() => _model.Password)" InputType="InputType.Password"/>
+                <MudTextField Label="Password" HelperText="Repeat the password" Class="mt-3"
+                              @bind-Value="_model.Password2" For="@(() => _model.Password2)" InputType="InputType.Password"/>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit" OnClick="Register" Disabled="_busy"
+                           Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private RegisterMessage _model = new();
+    private bool _busy;
+    private UiMessage? UiMessage { get; set; }
+
+    private async Task Register()
+    {
+        try
+        {
+            _busy = true;
+            var (succeeded, error) = await AuthService.RegisterUser(_model);
+            UiMessage = succeeded
+                ? new UiMessage(Severity.Success, "Registration successful")
+                : new UiMessage(Severity.Error, error ?? "Something went wrong");
+
+            var principal = await AuthService.GetUserClaimsPrincipal(new LoginMessage(_model.Email, _model.Password));
+            if (principal?.Identity is not null)
+            {
+                var key = $"Set-Login-{Guid.NewGuid()}";
+                MemoryCache.Set(key, principal);
+                NavManager.NavigateTo($"/Api/Cookies/Set-Auth?key={key}", forceLoad: true);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

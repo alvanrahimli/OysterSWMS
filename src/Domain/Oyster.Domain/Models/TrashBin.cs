@@ -6,9 +6,9 @@ public class TrashBin : EntityBase
 {
     public int FilledLevel { get; set; }
     public DateTime LastPingTimestamp { get; set; }
-    public int TypeId { get; set; }
-    public TrashBinType Type { get; set; } = default!;
-    public int AreaId { get; set; }
+    public TrashBinType Type { get; set; } = TrashBinType.None;
+    public string SensorSerialNumber { get; set; } = default!;
+    public int BinAreaId { get; set; }
     public BinArea BinArea { get; set; } = default!;
 
     public bool Deleted { get; set; }

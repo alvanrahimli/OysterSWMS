@@ -1,0 +1,61 @@
+﻿@page "/Account/Login"
+@using Microsoft.Extensions.Caching.Memory
+@using Oyster.UI.Models
+@using Oyster.UI.Services
+@inject AuthService AuthService
+@inject IMemoryCache MemoryCache
+@inject NavigationManager NavManager
+
+<PageTitle>Login | Specterise</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Login</MudText>
+@if (UiMessage is not null)
+{
+    <MudAlert Severity="UiMessage.Severity">@UiMessage.Message</MudAlert>
+}
+
+<MudGrid>
+    <MudItem xs="12" sm="10" md="6" lg="4">
+        <MudCard>
+            <MudCardContent>
+                <MudTextField Label="Email" Class="mt-3"
+                              @bind-Value="_model.Email" For="@(() => _model.Email)"/>
+                <MudTextField Label="Password" HelperText="Choose a strong password" Class="mt-3"
+                              @bind-Value="_model.Password" For="@(() => _model.Password)" InputType="InputType.Password"/>
+            </MudCardContent>
+            <MudCardActions>
+                <MudLink Href="/Account/Registration" Disabled="_busy"
+                         Color="Color.Primary" Class="ml-auto">Register</MudLink>
+                <MudButton ButtonType="ButtonType.Submit" OnClick="LoginUser" Disabled="_busy"
+                           Variant="Variant.Filled" Color="Color.Primary" Class="ml-3">Login</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private readonly LoginMessage _model = new();
+    private UiMessage? UiMessage { get; set; }
+    private bool _busy;
+
+    private async Task LoginUser()
+    {
+        try
+        {
+            var principal = await AuthService.GetUserClaimsPrincipal(_model);
+            UiMessage = principal is not null
+                ? new UiMessage(Severity.Success, "Login succeeded")
+                : new UiMessage(Severity.Error, "Email or password is invalid");
+            if (principal?.Identity is not null)
+            {
+                var key = $"Set-Login-{Guid.NewGuid()}";
+                MemoryCache.Set(key, principal);
+                NavManager.NavigateTo($"/Api/Cookies/Set-Auth?key={key}", forceLoad: true);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

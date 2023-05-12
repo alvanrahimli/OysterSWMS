@@ -1,8 +1,9 @@
 @page "/ServiceAreas/{ServiceAreaId:int}/Bins"
+@using Oyster.Domain.Models.Enums
 @inject DataContext Db
 @inject NavigationManager Nav
 
-<MudText Typo="Typo.h4" GutterBottom="true">Bins</MudText>
+<MudText Typo="Typo.h4" GutterBottom="true">Service area: @_serviceArea.AreaName (@_serviceArea.BinAreas.Count locations)</MudText>
 
 <MudExpansionPanels MultiExpansion="true" Elevation="1">
     <MudExpansionPanel Text="New data">
@@ -27,36 +28,83 @@
         </MudGrid>
     </MudExpansionPanel>
 
-    <MudExpansionPanel Text="Bin areas" IsExpanded="true">
-        <MudTable Items="_binAreas">
+    <MudExpansionPanel Text="Bin areas" IsExpanded="_binAreasExpanded" IsExpandedChanged="b => _binAreasExpanded = b">
+        <MudTable Items="_serviceArea.BinAreas">
             <HeaderContent>
                 <MudTh>Address</MudTh>
                 <MudTh>Location (lat,long)</MudTh>
                 <MudTh>Additional weight</MudTh>
                 <MudTh>Service area name</MudTh>
+                <MudTh>Actions</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Address">@context.AddressTitle</MudTd>
                 <MudTd DataLabel="Location">@context.Location[0], @context.Location[1]</MudTd>
                 <MudTd DataLabel="WeightAddition">@context.WeightAddition</MudTd>
                 <MudTd DataLabel="ServiceArea">@_serviceArea.AreaName</MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudButton Variant="Variant.Text" OnClick="async () => await SelectBinArea(context.Id)">Edit bins</MudButton>
+                </MudTd>
             </RowTemplate>
         </MudTable>
     </MudExpansionPanel>
 </MudExpansionPanels>
+
+@if (_selectedBinArea is {} area)
+{
+    <MudText Class="mt-3" Typo="Typo.h4" GutterBottom="true">Bin area: @area.AddressTitle</MudText>
+    <MudGrid Justify="Justify.FlexStart">
+        @foreach (var bin in area.TrashBins)
+        {
+            <MudItem xs="3">
+                <MudCard Outlined="true" Elevation="0">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2">Filled: @GetCircles(bin.FilledLevel)</MudText>
+                        <MudText Typo="Typo.body2">Type: @bin.Type</MudText>
+                        <MudText Typo="Typo.body2">State: @(DateTime.UtcNow.Subtract(bin.LastPingTimestamp).TotalMinutes < 1 ? "alive" : "dead")</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary">See last state</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+        <MudItem xs="3">
+            <MudCard Outlined="true" Elevation="0">
+                <MudCardContent>
+                    <MudTextField @bind-Value="_newTrashBin.SensorSerialNumber" Label="Sensor serial number" 
+                                  Required="true" RequiredError="Sensor serial number is required"></MudTextField>
+                    <MudSelect @bind-Value="_newTrashBin.Type" Required="true" Label="Bin type">
+                        <MudSelectItem Value="TrashBinType.None">None</MudSelectItem>
+                        <MudSelectItem Value="TrashBinType.Food">Food</MudSelectItem>
+                        <MudSelectItem Value="TrashBinType.Mixed">Mixed</MudSelectItem>
+                        <MudSelectItem Value="TrashBinType.Paper">Paper</MudSelectItem>
+                        <MudSelectItem Value="TrashBinType.Plastics">Plastics</MudSelectItem>
+                    </MudSelect>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddTrashBin">Save</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
 @code {
     
     [Parameter]
     public int ServiceAreaId { get; set; }
 
     private NewBinArea _newBinArea = new();
-    private List<ServiceArea> _serviceAreas = new();
+    private NewTrashBin _newTrashBin = new();
+
     private ServiceArea _serviceArea = new();
-    private List<BinArea> _binAreas = new();
+    private bool _binAreasExpanded = true;
+    private BinArea? _selectedBinArea;
 
     protected override async Task OnInitializedAsync()
     {
-        var area = await Db.ServiceAreas.FirstOrDefaultAsync(x => x.Id == ServiceAreaId);
+        var area = await Db.ServiceAreas.Include(s => s.BinAreas).FirstOrDefaultAsync(x => x.Id == ServiceAreaId);
         if (area is null)
         {
             Nav.NavigateTo("/ServiceAreas");
@@ -64,8 +112,6 @@
         }
 
         _serviceArea = area;
-        _serviceAreas = await Db.ServiceAreas.ToListAsync();
-        _binAreas = await Db.BinAreas.Where(a => a.ServiceAreaId == ServiceAreaId).ToListAsync();
 
         await base.OnInitializedAsync();
     }
@@ -87,11 +133,56 @@
         _newBinArea = new NewBinArea();
     }
 
+    private async Task SelectBinArea(int binAreaId)
+    {
+        _selectedBinArea = _serviceArea.BinAreas.FirstOrDefault(a => a.Id == binAreaId);
+        if (_selectedBinArea is null) return;
+
+        _binAreasExpanded = false;
+        _selectedBinArea.TrashBins = await Db.TrashBins.Where(b => b.BinAreaId == _selectedBinArea.Id).ToListAsync();
+    }
+
+    private async Task AddTrashBin()
+    {
+        if (_selectedBinArea is null) return;
+        if (_newTrashBin is {Type: TrashBinType.None, SensorSerialNumber: ""}) return;
+        
+        var trashBin = new TrashBin
+        {
+            BinAreaId = _selectedBinArea.Id,
+            Type = _newTrashBin.Type,
+            SensorSerialNumber = _newTrashBin.SensorSerialNumber,
+            FilledLevel = 0,
+            LastPingTimestamp = DateTime.MinValue
+        };
+        await Db.TrashBins.AddAsync(trashBin);
+        await Db.SaveChangesAsync();
+        await OnInitializedAsync();
+        _newTrashBin = new NewTrashBin();
+    }
+    
+    // ⬤ ◯
+    private static string GetCircles(int level) => level switch
+    {
+        0 => "◯ ◯ ◯ ◯ ◯",
+        1 => "⬤ ◯ ◯ ◯ ◯",
+        2 => "⬤ ⬤ ◯ ◯ ◯",
+        3 => "⬤ ⬤ ⬤ ◯ ◯",
+        4 => "⬤ ⬤ ⬤ ⬤ ◯",
+        5 => "⬤ ⬤ ⬤ ⬤ ⬤",
+        _ => level.ToString()
+    };
+
     private class NewBinArea
     {
         public string AddressTitle { get; set; } = default!;
         public decimal[] Location { get; set; } = { 0m, 0m };
         public int WeightAddition { get; set; }
-        public int ServiceAreaId { get; set; }
+    }
+
+    private class NewTrashBin
+    {
+        public TrashBinType Type { get; set; } = TrashBinType.None;
+        public string SensorSerialNumber { get; set; } = string.Empty;
     }
 }
